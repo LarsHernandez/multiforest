@@ -678,6 +678,12 @@ main_plot <- main_plot +
                   shape = format_options$shape, na.rm = TRUE)
 
 
+point_data <- forest_text %>% filter(label %in% c("Univariate","Multivariate")) %>% 
+  mutate(type = label)
+
+forest_text <- forest_text %>% mutate(x = if_else(label %in% c("Univariate","Multivariate"),x+0.2,x))
+
+main_plot <- main_plot + geom_point(size=3.5, data=point_data, aes(x=x+0.05, y=y-0.04, color=type), shape=15)
 
 if (any(mapped_data$whole_row)) {
   main_plot <- main_plot +

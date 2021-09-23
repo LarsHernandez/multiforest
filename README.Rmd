@@ -33,7 +33,7 @@ library(rlang)
 library(labelled)
 library(survival)
 library(pec)
-
+library(knitr)
 library(multiforest)
 
 source("R/forestmodels_new_test.r")
@@ -41,7 +41,7 @@ source("R/forestmodels_new_test.r")
 
 First we need some data, i take some random clinical trial data from the package `pec` and define 5 year survival. It's important only to leave the data that will be contained in the models.
 
-```{r fig.height=7, fig.width=10}
+```{r fig.height=7.4, fig.width=10}
 data(Pbc3, package = "pec")
 
 pb <- Pbc3 %>%
@@ -73,12 +73,12 @@ pb <- Pbc3 %>%
   mutate(unit  = fct_relevel(unit, "London"),
          tment = fct_relevel(tment, "Placebo"))
 
-head(pb)
+kable(head(pb))
 ```
 
 Before plotting we can make headers a bit nicer by applying a label from the package `labelled` to plot we use the function `mforestmodel` where we have to specify limits and the dependent variable.
 
-```{r fig.height=7, fig.width=10}
+```{r fig.height=7.4, fig.width=10}
 var_label(pb) <- list(tment = "Treatment",
                       sex = "Sex",
                       age = "Age group",
@@ -94,12 +94,12 @@ mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4))
 
 There are also a few options included for modifying the plot. For more options just use the raw function code from gíthub. The final plot is a ggplot object, and therefore normal options of ggplot can be supplied, like the labs argument.
 
-```{r fig.height=8, fig.width=10}
+```{r fig.height=8.4, fig.width=10}
 mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4), 
              pala="#1f78b4", palb="#a6cee3", 
-             legend_position = c(0.55,0.93), 
+             #legend_position = c(0.55,0.93), 
              spaces = c(0.015,0.22,0.2,0.005,0.2,0.02),
-             header = c("Group","Patients","RR of death","Univariate (light)","P","Multivariate (dark)","P")) + 
+             header = c("Group","Patients","RR of death","Univariate","P","Multivariate","P")) + 
   labs(title="Relative risk of death within 3 years of diagnosis",
        subtitle="PBC3 - randomized clinical trial between 1 Jan. 1983 and 1 Jan. 1987 ",
        caption="Source: PCB3 from R package pec")
@@ -109,7 +109,7 @@ mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4),
 
 Here is another example with some other data
 
-```{r fig.height=6.5, fig.width=10}
+```{r fig.height=6.9, fig.width=10}
 data(cgd, package = "survival")
 
 cg <- cgd %>% 

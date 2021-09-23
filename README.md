@@ -29,7 +29,7 @@ library(rlang)
 library(labelled)
 library(survival)
 library(pec)
-
+library(knitr)
 library(multiforest)
 
 source("R/forestmodels_new_test.r")
@@ -71,15 +71,17 @@ pb <- Pbc3 %>%
   mutate(unit  = fct_relevel(unit, "London"),
          tment = fct_relevel(tment, "Placebo"))
 
-head(pb)
-#>   dead5yr tment    sex     age     weight stage   unit gibleed
-#> 1    TRUE   CyA   Male 60 - 75 65 - 100kg    IV London      No
-#> 2   FALSE   CyA Female 18 - 50  55 - 65kg   III London      No
-#> 3   FALSE   CyA Female 18 - 50 65 - 100kg   III London      No
-#> 4    TRUE   CyA Female 60 - 75     < 55kg    IV London     Yes
-#> 5    TRUE   CyA Female 60 - 75     < 55kg    IV London      No
-#> 6    TRUE   CyA   Male 60 - 75  55 - 65kg    IV London      No
+kable(head(pb))
 ```
+
+| dead5yr | tment | sex    | age     | weight     | stage | unit   | gibleed |
+|:--------|:------|:-------|:--------|:-----------|:------|:-------|:--------|
+| TRUE    | CyA   | Male   | 60 - 75 | 65 - 100kg | IV    | London | No      |
+| FALSE   | CyA   | Female | 18 - 50 | 55 - 65kg  | III   | London | No      |
+| FALSE   | CyA   | Female | 18 - 50 | 65 - 100kg | III   | London | No      |
+| TRUE    | CyA   | Female | 60 - 75 | &lt; 55kg  | IV    | London | Yes     |
+| TRUE    | CyA   | Female | 60 - 75 | &lt; 55kg  | IV    | London | No      |
+| TRUE    | CyA   | Male   | 60 - 75 | 55 - 65kg  | IV    | London | No      |
 
 Before plotting we can make headers a bit nicer by applying a label from
 the package `labelled` to plot we use the function `mforestmodel` where
@@ -109,9 +111,9 @@ like the labs argument.
 ``` r
 mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4), 
              pala="#1f78b4", palb="#a6cee3", 
-             legend_position = c(0.55,0.93), 
+             #legend_position = c(0.55,0.93), 
              spaces = c(0.015,0.22,0.2,0.005,0.2,0.02),
-             header = c("Group","Patients","RR of death","Univariate (light)","P","Multivariate (dark)","P")) + 
+             header = c("Group","Patients","RR of death","Univariate","P","Multivariate","P")) + 
   labs(title="Relative risk of death within 3 years of diagnosis",
        subtitle="PBC3 - randomized clinical trial between 1 Jan. 1983 and 1 Jan. 1987 ",
        caption="Source: PCB3 from R package pec")
