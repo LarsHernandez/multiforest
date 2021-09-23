@@ -213,16 +213,9 @@ forest_model_lars <- function(model,
 
 
 
+mforestmodel <- function(data, pala="grey15", palb="grey75", lim=c(-2.6,4), dependent="delta", 
+                         legend_position="none", header = NULL, spaces = NULL) {
 
-
-
-
-
-
-mforestmodel <- function(data, pala="grey75", palb="grey15", lim=c(-2.6,4), dependent="delta") {
-
-  
-  
   tgt_uni <- paste0(dependent,"~", names(data)[-grep(dependent, names(data))])
   tgt_mul <- paste0(dependent,"~", paste(names(data)[-grep(dependent, names(data))], collapse="+"))
   
@@ -230,33 +223,43 @@ mforestmodel <- function(data, pala="grey75", palb="grey15", lim=c(-2.6,4), depe
   fit_mul <- glm(tgt_mul, family = "poisson", data = data)
   
   
-trans = exp
+trans <- exp
   
-fit1 <- fit_mul
-fit2 <- fit_uni
 
-fd2 <- forest_model_lars(fit1, return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
-fd1 <- forest_model_lars(model_list = fit2, return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
-
-
+fd2 <- forest_model_lars(model = fit_mul,      return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
+fd1 <- forest_model_lars(model_list = fit_uni, return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
 
 fd1$panels[[11]] <- fd2$panels[[7]]
 fd1$panels[[12]] <- fd2$panels[[8]]
 fd1$panels[[13]] <- fd2$panels[[9]]
 fd1$panels[[14]] <- fd2$panels[[10]]
 
-fd1$panels[[6]]$heading <- "Relative Risk"
-fd1$panels[[8]]$heading <- "Univariate (grey)"
-fd1$panels[[9]]$heading <- "P"
-fd1$panels[[12]]$heading <- "Multivariate (black)"
-fd1$panels[[13]]$heading <- "P"
+if (is.null(header)) {
+  head <- c("Variable","N","Relative Risk","Univariate","P","Multivariate","P")
+} else {head <- header}
 
-fd1$panels[[3]]$width <- 0.27
-fd1$panels[[8]]$width <- 0.2
-fd1$panels[[12]]$width <- 0.2
-fd1$panels[[10]]$width <- 0.005
-fd1$panels[[14]]$width <- 0.020
-fd1$panels[[1]]$width <- 0.015
+if (is.null(spaces)) {
+  space <- c(0.015,0.27,0.2,0.005,0.2,0.02)
+} else {space <- spaces}
+
+
+fd1$panels[[2]]$heading <- head[1]
+fd1$panels[[4]]$heading <- head[2]
+fd1$panels[[6]]$heading <- head[3]
+fd1$panels[[8]]$heading <- head[4]
+fd1$panels[[9]]$heading <- head[5]
+fd1$panels[[12]]$heading <-head[6]
+fd1$panels[[13]]$heading <-head[7]
+
+fd1$panels[[1]]$width <- space[1]
+fd1$panels[[3]]$width <- space[2]
+fd1$panels[[8]]$width <- space[3]
+fd1$panels[[10]]$width <-space[4]
+fd1$panels[[12]]$width <-space[5]
+fd1$panels[[14]]$width <-space[6]
+
+#fd1$panels[[13]]$color <- "Multivariate"
+#fd1$panels[[9]]$color <- "Univariate"
 
 fd1$panels[[12]]$display <- new_quosure(
   quote(if_else(reference, "Reference", sprintf("%0.2f (%0.2f, %0.2f)",
@@ -268,19 +271,19 @@ fd1$panels[[13]]$display<- new_quosure(
 
 # Function ----------------------------------------------------------------
 
-forest_data = fd1$forest_data
-forest_data_2 = fd2$forest_data
-mapping = aes(estimate, xmin = conf.low, xmax = conf.high)
-panels = fd1$panels
+forest_data <- fd1$forest_data
+forest_data_2 <- fd2$forest_data
+mapping <- aes(estimate, xmin = conf.low, xmax = conf.high)
+panels <- fd1$panels
 
-funcs = NULL
-format_options = list(colour = "black", shape = 15, banded = F, text_size = 5, point_size = 5)
-theme = theme_forest()
-limits = lim
-breaks = NULL
-recalculate_width = F
-recalculate_height = TRUE
-exclude_infinite_cis = TRUE
+funcs <- NULL
+format_options <- list(colour = "black", shape = 15, banded = F, text_size = 5, point_size = 5)
+theme <- theme_forest()
+limits <- lim
+breaks <- NULL
+recalculate_width <- FALSE
+recalculate_height <- TRUE
+exclude_infinite_cis <- TRUE
 
 
 # Update older style panels to quosures
@@ -456,7 +459,7 @@ if (!is.null(recalculate_height) && !(identical(recalculate_height, FALSE))) {
 
 if (!is.null(recalculate_width) && !(identical(recalculate_width, FALSE))) {
   panel_positions <-
-    recalculate_width_panels(panel_positions,
+    forestmodel:::recalculate_width_panels(panel_positions,
                              mapped_text = mapped_text,
                              mapped_data = mapped_data,
                              recalculate_width = recalculate_width,
@@ -646,6 +649,7 @@ if (format_options$banded) {
               forest_rectangles, na.rm = TRUE,
               color = "grey90", fill="white", size=0.3)
 }
+
 main_plot <- main_plot + 
   geom_line(
   aes(x, y, linetype = linetype, group = group),
@@ -662,14 +666,15 @@ if (any(mapped_data$diamond)) {
 }
 
 main_plot <- main_plot +
-  geom_errorbar(aes(y = y, x = x, xmin = xmin, xmax = xmax, color=rev(type)), position=position_dodge(0.6),
-                width=0.4,size=0.4, na.rm = TRUE,
+  geom_errorbar(aes(y = y, x = x, xmin = xmin, xmax = xmax, color=(type)), position=position_dodge(0.6),
+                width=0.4,size=0.4, na.rm = TRUE, show.legend = F,
                 filter(mapped_data, !diamond & !(is.na(xmin) & is.na(xmax))))
 
 
 main_plot <- main_plot +
-  geom_pointrange(aes(y=y, x=x, xmin = xmin, xmax = xmax, color=rev(type)), position=position_dodge(0.6),
-                  size = 0.5,fatten = 6, filter(mapped_data, !diamond),
+  geom_pointrange(aes(y=y, x=x, xmin = xmin, xmax = xmax, color=(type)), position=position_dodge(0.6),
+                  size = 0.5,fatten = 6, filter(mapped_data, !diamond) %>% mutate(xmin=if_else(is.na(xmin),x,xmin),
+                                                                                  xmax=if_else(is.na(xmax),x,xmax)),
                   shape = format_options$shape, na.rm = TRUE)
 
 
@@ -681,6 +686,7 @@ if (any(mapped_data$whole_row)) {
               fill = "#FFFFFF"
     )
 }
+
 for (parse_type in unique(forest_text$parse)) {
   main_plot <- main_plot +
     geom_text(aes(x, y, label = label, hjust = hjust, fontface = fontface),
@@ -699,18 +705,15 @@ main_plot <- main_plot +
   labs(color=NULL) +
   scale_linetype_identity() +
   scale_alpha_identity() +
-  guides(size = "none") +
   scale_x_continuous(breaks = breaks, labels = sprintf("%g", trans(breaks)), expand = c(0,0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme + theme(legend.position="none", 
-                panel.border = element_rect(colour = "black", size=0.8),
-                axis.text =element_text(color="black"), 
-                axis.ticks = element_line(color="black"))
+  theme + 
+  theme(legend.position = legend_position, 
+        legend.background = element_rect(fill=NA),
+        panel.border = element_rect(colour = "black", size = 0.8),
+        axis.text =element_text(color="black"), 
+        axis.ticks = element_line(color="black"))
 
 main_plot
 }
-
-
-
-#mul_forestmodel <- function()
 

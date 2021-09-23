@@ -1,0 +1,21 @@
+Package: multiforest
+Type: Package
+Title: Multivariable Forestplot for Poisson
+Version: 0.1.0
+Authors@R: c(
+    person("Lars", "Boerty", email = "lars.borty@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-3715-8528")),
+    person("Haematology Research Unit - Aalborg", role = "cph"))
+Description: Compressed spatial vector data originally from <https://dawadocs.dataforsyningen.dk/> saved as Simple 
+    Features, SF, objects with data on population, age and gender from Statistics Denmark <https://www.dst.dk/da/>.
+License: MIT + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.1.2
+Suggests: 
+    rmarkdown
+Imports: Rdpack,
+        knitr,
+        rlang,
+        dplyr,
+        forestmodel
+Depends: R (>= 3.5.0)
+RdMacros: Rdpack
