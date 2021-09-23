@@ -214,13 +214,13 @@ forest_model_lars <- function(model,
 
 
 mforestmodel <- function(data, pala="grey15", palb="grey75", lim=c(-2.6,4), dependent="delta", 
-                         legend_position="none", header = NULL, spaces = NULL) {
+                         legend_position="none", header = NULL, spaces = NULL, est_family="poisson") {
 
   tgt_uni <- paste0(dependent,"~", names(data)[-grep(dependent, names(data))])
   tgt_mul <- paste0(dependent,"~", paste(names(data)[-grep(dependent, names(data))], collapse="+"))
   
-  fit_uni <- Map(function(x) glm(as.formula(x), family = "poisson", data = data), tgt_uni)
-  fit_mul <- glm(tgt_mul, family = "poisson", data = data)
+  fit_uni <- Map(function(x) glm(as.formula(x), family = est_family, data = data), tgt_uni)
+  fit_mul <- glm(tgt_mul, family = est_family, data = data)
   
   
 trans <- exp
@@ -234,13 +234,16 @@ fd1$panels[[12]] <- fd2$panels[[8]]
 fd1$panels[[13]] <- fd2$panels[[9]]
 fd1$panels[[14]] <- fd2$panels[[10]]
 
+
 if (is.null(header)) {
   head <- c("Variable","N","Relative Risk","Univariate","P","Multivariate","P")
+  if (est_family=="binomial") {head[3]<-"Odds Ratio"}
 } else {head <- header}
 
 if (is.null(spaces)) {
   space <- c(0.015,0.27,0.2,0.005,0.2,0.02)
 } else {space <- spaces}
+
 
 
 fd1$panels[[2]]$heading <- head[1]

@@ -7,12 +7,12 @@ This package is a modification (with a very limited scope) of the very
 nice package `forestmodel` that is available here:
 [Github](https://github.com/NikNakk/forestmodel)
 
-multiforest will take a dataset and run uni- and multivariate poisson
-regressions on a binary outcome variable. These plots can take time to
-construct manually and one nice thing of using this package is that it
-makes it easy to do compare across sensitivity analyses (like how does
-results change when this group is excluded, or definition of outcome
-variable is changed)
+multiforest will take a dataset and run uni- and multivariate
+poisson/binomial regressions on a binary outcome variable. These plots
+can take time to construct manually and one nice thing of using this
+package is that it makes it easy to do compare across sensitivity
+analyses (like how does results change when this group is excluded, or
+definition of outcome variable is changed)
 
 ## Installation
 
@@ -109,25 +109,25 @@ ggplot object, and therefore normal options of ggplot can be supplied,
 like the labs argument.
 
 ``` r
-mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4), 
-             pala="#1f78b4", palb="#a6cee3", 
+mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4),
+             pala="#2171b5", palb="#9ecae1", 
              #legend_position = c(0.55,0.93), 
              spaces = c(0.015,0.22,0.2,0.005,0.2,0.02),
-             header = c("Group","Patients","RR of death","Univariate","P","Multivariate","P")) + 
-  labs(title="Relative risk of death within 3 years of diagnosis",
-       subtitle="PBC3 - randomized clinical trial between 1 Jan. 1983 and 1 Jan. 1987 ",
-       caption="Source: PCB3 from R package pec")
+             header = c("Group","Patients","RR of death (95% CI)","Univariate","P.val","Multivariate","P.val")) + 
+  labs(title="Relative risk of death within 5 years of diagnosis",
+       subtitle="PBC3 - randomized clinical trial between 1 Jan. 1983 and 1 Jan. 1987")
 ```
 
 ![](man/figures/README-unnamed-chunk-6-1.png)<!-- -->
 
-Here is another example with some other data
+Here is another example with some other data, and we can switch from
+poisson (RR) to a binomial/logistic model (OR)
 
 ``` r
 data(cgd, package = "survival")
 
 cg <- cgd %>% 
-  select(treat, sex, age, hos.cat, status, weight, inherit, height) %>%
+  select(treat, sex, hos.cat, status, weight, inherit, height) %>%
   mutate(
     hos.cat = as.character(hos.cat),
     weight = case_when(
@@ -137,21 +137,16 @@ cg <- cgd %>%
     height = case_when(
       between(height, 0, 120) ~ "< 1.2m",
       between(height, 120, 150) ~ "1.2 - 1.5m",
-      between(height, 150, 220) ~ "1.5 - 2.2m"),
-    age = case_when(
-      between(age, 0, 10) ~ "0 - 10",
-      between(age, 11, 20) ~ "11 - 20",
-      between(age, 21, 140) ~ "21 - 40"))
+      between(height, 150, 220) ~ "1.5 - 2.2m"))
   
 var_label(cg) <- list(treat = "Treatment",
                       sex = "Sex",
-                      age = "Age group",
                       weight = "Weight group",
                       height = "Height group",
                       hos.cat = "Hospital region",
                       inherit = "Inherited")
 
-mforestmodel(cg, dependent="status", lim=c(-2,2))
+mforestmodel(cg, dependent="status", lim=c(-3,2), est_family = "binomial")
 ```
 
 ![](man/figures/README-unnamed-chunk-7-1.png)<!-- -->
