@@ -213,7 +213,7 @@ forest_model_lars <- function(model,
 
 
 
-mforestmodel <- function(data, pala="grey15", palb="grey75", lim=c(-2.6,4), dependent="delta", 
+mforestmodel <- function(data, pala="grey25", palb="grey75", lim=c(-2.6,4), dependent="delta", 
                          legend_position="none", header = NULL, spaces = NULL, est_family="poisson") {
 
   tgt_uni <- paste0(dependent,"~", names(data)[-grep(dependent, names(data))])

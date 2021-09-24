@@ -31,6 +31,7 @@ library(survival)
 library(pec)
 library(knitr)
 library(multiforest)
+library(kableExtra)
 
 source("R/forestmodels_new_test.r")
 ```
@@ -74,14 +75,194 @@ pb <- Pbc3 %>%
 kable(head(pb))
 ```
 
-| dead5yr | tment | sex    | age     | weight     | stage | unit   | gibleed |
-|:--------|:------|:-------|:--------|:-----------|:------|:-------|:--------|
-| TRUE    | CyA   | Male   | 60 - 75 | 65 - 100kg | IV    | London | No      |
-| FALSE   | CyA   | Female | 18 - 50 | 55 - 65kg  | III   | London | No      |
-| FALSE   | CyA   | Female | 18 - 50 | 65 - 100kg | III   | London | No      |
-| TRUE    | CyA   | Female | 60 - 75 | &lt; 55kg  | IV    | London | Yes     |
-| TRUE    | CyA   | Female | 60 - 75 | &lt; 55kg  | IV    | London | No      |
-| TRUE    | CyA   | Male   | 60 - 75 | 55 - 65kg  | IV    | London | No      |
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+dead5yr
+</th>
+<th style="text-align:left;">
+tment
+</th>
+<th style="text-align:left;">
+sex
+</th>
+<th style="text-align:left;">
+age
+</th>
+<th style="text-align:left;">
+weight
+</th>
+<th style="text-align:left;">
+stage
+</th>
+<th style="text-align:left;">
+unit
+</th>
+<th style="text-align:left;">
+gibleed
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:left;">
+CyA
+</td>
+<td style="text-align:left;">
+Male
+</td>
+<td style="text-align:left;">
+60 - 75
+</td>
+<td style="text-align:left;">
+65 - 100kg
+</td>
+<td style="text-align:left;">
+IV
+</td>
+<td style="text-align:left;">
+London
+</td>
+<td style="text-align:left;">
+No
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:left;">
+CyA
+</td>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:left;">
+18 - 50
+</td>
+<td style="text-align:left;">
+55 - 65kg
+</td>
+<td style="text-align:left;">
+III
+</td>
+<td style="text-align:left;">
+London
+</td>
+<td style="text-align:left;">
+No
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:left;">
+CyA
+</td>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:left;">
+18 - 50
+</td>
+<td style="text-align:left;">
+65 - 100kg
+</td>
+<td style="text-align:left;">
+III
+</td>
+<td style="text-align:left;">
+London
+</td>
+<td style="text-align:left;">
+No
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:left;">
+CyA
+</td>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:left;">
+60 - 75
+</td>
+<td style="text-align:left;">
+&lt; 55kg
+</td>
+<td style="text-align:left;">
+IV
+</td>
+<td style="text-align:left;">
+London
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:left;">
+CyA
+</td>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:left;">
+60 - 75
+</td>
+<td style="text-align:left;">
+&lt; 55kg
+</td>
+<td style="text-align:left;">
+IV
+</td>
+<td style="text-align:left;">
+London
+</td>
+<td style="text-align:left;">
+No
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:left;">
+CyA
+</td>
+<td style="text-align:left;">
+Male
+</td>
+<td style="text-align:left;">
+60 - 75
+</td>
+<td style="text-align:left;">
+55 - 65kg
+</td>
+<td style="text-align:left;">
+IV
+</td>
+<td style="text-align:left;">
+London
+</td>
+<td style="text-align:left;">
+No
+</td>
+</tr>
+</tbody>
+</table>
 
 Before plotting we can make headers a bit nicer by applying a label from
 the package `labelled` to plot we use the function `mforestmodel` where
