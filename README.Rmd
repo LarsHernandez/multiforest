@@ -28,16 +28,15 @@ devtools::install_github("LarsHernandez/multiforest")
 
 ```{r message=FALSE, warning=FALSE}
 library(forestmodel)
+library(multiforest)
+
 library(tidyverse)
 library(rlang)
 library(labelled)
 library(survival)
 library(pec)
 library(knitr)
-library(multiforest)
 library(kableExtra)
-
-source("R/forestmodels_new_test.r")
 ```
 
 First we need some data, i take some random clinical trial data from the package `pec` and define 5 year survival. It's important only to leave the data that will be contained in the models.
@@ -87,8 +86,6 @@ var_label(pb) <- list(tment = "Treatment",
                       stage = "Cancer stage",
                       unit = "Hospital",
                       gibleed = "Gastrointestinal bleeding")
-
-source("R/forestmodels_new_test.r")
 
 mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4))
 ```

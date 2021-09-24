@@ -24,16 +24,15 @@ devtools::install_github("LarsHernandez/multiforest")
 
 ``` r
 library(forestmodel)
+library(multiforest)
+
 library(tidyverse)
 library(rlang)
 library(labelled)
 library(survival)
 library(pec)
 library(knitr)
-library(multiforest)
 library(kableExtra)
-
-source("R/forestmodels_new_test.r")
 ```
 
 First we need some data, i take some random clinical trial data from the
@@ -277,8 +276,6 @@ var_label(pb) <- list(tment = "Treatment",
                       unit = "Hospital",
                       gibleed = "Gastrointestinal bleeding")
 
-source("R/forestmodels_new_test.r")
-
 mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4))
 ```
 
@@ -311,21 +308,23 @@ cg <- cgd %>%
   select(treat, sex, hos.cat, status, weight, inherit, height) %>%
   mutate(
     hos.cat = as.character(hos.cat),
+    bmi = weight / (height/100)^2,
     weight = case_when(
       between(weight, 0, 55) ~ "< 55kg",
       between(weight, 55, 65) ~ "55 - 65kg",
       between(weight, 65, 100) ~ "65 - 100kg"),
-    height = case_when(
-      between(height, 0, 120) ~ "< 1.2m",
-      between(height, 120, 150) ~ "1.2 - 1.5m",
-      between(height, 150, 220) ~ "1.5 - 2.2m"))
+    bmi = case_when(
+      between(bmi, 0, 17.4) ~ "< 17.5 kg/m\U00B2",
+      between(bmi, 17.5, 23.9) ~ "17.5 - 24.9 kg/m\U00B2",
+      between(bmi, 24, 220) ~ "> 25 kg/m\U00B2")) %>% 
+  select(-weight, -height) %>% 
+  mutate(bmi = fct_relevel(bmi, "< 17.5 kg/m\U00B2", "17.5 - 24.9 kg/m\U00B2"))
   
 var_label(cg) <- list(treat = "Treatment",
                       sex = "Sex",
-                      weight = "Weight group",
-                      height = "Height group",
                       hos.cat = "Hospital region",
-                      inherit = "Inherited")
+                      inherit = "Inherited",
+                      bmi = "Body Mass Index")
 
 mforestmodel(cg, dependent="status", lim=c(-3,2), est_family = "binomial")
 ```

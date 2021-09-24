@@ -1,207 +1,23 @@
-forest_model_lars <- function(model,
-                         panels = default_forest_panels(model, factor_separate_line = factor_separate_line),
-                         covariates = NULL, exponentiate = NULL, funcs = NULL,
-                         factor_separate_line = FALSE,
-                         format_options = forest_model_format_options(),
-                         theme = theme_forest(),
-                         limits = NULL, breaks = NULL, return_data = FALSE,
-                         recalculate_width = TRUE, recalculate_height = TRUE,
-                         model_list = NULL, merge_models = FALSE, exclude_infinite_cis = TRUE) {
-  mapping <- aes(estimate, xmin = conf.low, xmax = conf.high)
-  if (!is.null(model_list)) {
-    if (!is.list(model_list)) {
-      stop("`model_list` must be a list if provided.")
-    }
-    if (is.null(names(model_list))) {
-      model_names <- rep("", length(model_list))
-    } else {
-      model_names <- names(model_list)
-    }
-    if (any(model_names == "")) {
-      need_names <- which(model_names == "")
-      model_names_needed <- vapply(model_list[need_names], function(x) quo_name(x$call), character(1))
-      model_names[need_names] <- model_names_needed
-    }
-    if (!merge_models) {
-      mapping <- c(mapping, aes(section = model_name))
-    }
-    if (is.null(exponentiate)) {
-      exponentiate <- inherits(model_list[[1]], "coxph") ||
-        (inherits(model_list[[1]], "glm") && model_list[[1]]$family$link == "logit")
-    }
-    if (missing(panels)) {
-      panels <- default_forest_panels(model_list[[1]], factor_separate_line = factor_separate_line)
-    }
-  } else {
-    if (is.null(exponentiate)) {
-      exponentiate <- inherits(model, "coxph") ||
-        (inherits(model, "glm") && model$family$link == "logit")
-    }
-  }
-  
-  if (exponentiate) trans <- exp else trans <- I
-  
-  stopifnot(is.list(panels))
-  
-  remove_backticks <- function(x) {
-    gsub("^`|`$|\\\\(?=`)|`(?=:)|(?<=:)`", "", x, perl = TRUE)
-  }
-  
-  make_forest_terms <- function(model) {
-    tidy_model <- broom::tidy(model, conf.int = FALSE)
-    tidy_model <-  tidy_model %>% 
-      mutate(conf.low=estimate-(1.96*std.error),
-             conf.high=estimate+(1.96*std.error),
-             estimate = if_else(estimate>5 | -5 > estimate,NA_real_,estimate),
-             conf.low = if_else(conf.low>5 | -5 > conf.low,NA_real_,conf.low),
-             conf.high = if_else(conf.high>5 | -5 > conf.high,NA_real_,conf.high))
-    data <- stats::model.frame(model)
-    
-    forest_terms <- tibble::tibble(
-      term_label = attr(model$terms, "term.labels"),
-      variable = remove_backticks(term_label)
-    ) %>%
-      inner_join(
-        tibble::tibble(
-          variable = names(attr(model$terms, "dataClasses"))[-1],
-          class = attr(model$terms, "dataClasses")[-1]
-        ),
-        by = "variable"
-      )
-    
-    forest_labels <- tibble::tibble(
-      variable = names(data),
-      label = vapply(
-        data,
-        function(x) attr(x, "label", exact = TRUE) %||% NA_character_,
-        character(1)
-      ) %>%
-        coalesce(variable)
-    )
-    
-    create_term_data <- function(term_row) {
-      if (!is.na(term_row$class)) {
-        var <- term_row$variable
-        if (term_row$class %in% c("factor", "character")) {
-          tab <- table(data[, var])
-          if (!any(paste0(term_row$term_label, names(tab)) %in% tidy_model$term)) {
-            # Filter out terms not in final model summary (e.g. strata)
-            out <- tibble::tibble(variable = NA)
-          } else {
-            out <- data.frame(
-              term_row,
-              level = names(tab),
-              level_no = 1:length(tab),
-              n = as.integer(tab),
-              stringsAsFactors = FALSE
-            )
-            if (factor_separate_line) {
-              out <- bind_rows(tibble::as_tibble(term_row), out)
-            }
-            if (inherits(model, "coxph")) {
-              data_event <- bind_cols(data[, -1, drop = FALSE],
-                                      .event_time = data[, 1][, "time"],
-                                      .event_status = data[, 1][, "status"]
-              )
-              event_detail_tab <- data_event %>%
-                group_by(!!as.name(var)) %>%
-                summarise(
-                  person_time = sum(.event_time),
-                  n_events = sum(.event_status)
-                )
-              colnames(event_detail_tab)[1] <- "level"
-              event_detail_tab$level <- as.character(event_detail_tab$level)
-              out <- out %>% left_join(event_detail_tab, by = "level")
-            }
-          }
-        } else {
-          out <- data.frame(term_row,
-                            level = NA, level_no = NA, n = sum(!is.na(data[, var])),
-                            stringsAsFactors = FALSE
-          )
-          if (term_row$class == "logical") {
-            out$term_label <- paste0(term_row$term_label, "TRUE")
-          }
-        }
-      } else {
-        out <- data.frame(term_row, level = NA, level_no = NA, n = NA, stringsAsFactors = FALSE)
-      }
-      out
-    }
-    forest_terms <- forest_terms %>%
-      rowwise() %>%
-      do(create_term_data(.)) %>%
-      ungroup() %>%
-      filter(!is.na(variable)) %>%
-      mutate(term = paste0(term_label, replace(level, is.na(level), ""))) %>%
-      left_join(tidy_model, by = "term") %>%
-      mutate(
-        reference = ifelse(is.na(level_no), FALSE, level_no == 1),
-        estimate = ifelse(reference, 0, estimate),
-        variable = ifelse(is.na(variable), remove_backticks(term), variable)
-      ) %>%
-      mutate(
-        variable = ifelse(is.na(level_no) | (level_no == 1 & !factor_separate_line), variable, NA)
-      ) %>%
-      left_join(
-        forest_labels,
-        by = "variable"
-      ) %>%
-      mutate(
-        variable = coalesce(label, variable)
-      )
-    if (!is.null(covariates)) {
-      forest_terms <- filter(forest_terms, term_label %in% covariates)
-    }
-    
-    forest_terms
-  }
-  
-  if (!is.null(model_list)) {
-    forest_terms <- lapply(seq_along(model_list), function(i) {
-      make_forest_terms(model_list[[i]]) %>%
-        mutate(model_name = model_names[i])
-    }) %>%
-      bind_rows()
-    if (merge_models) {
-      forest_terms$model_name <- NULL
-    }
-  } else {
-    forest_terms <- make_forest_terms(model)
-  }
-  
-  # #use_exp <- grepl("exp", deparse(trans))
-  if (!is.null(limits)) {
-    forest_terms <- forest_terms %>%
-      mutate(
-        arrow_tag.l = limits[1],
-        arrow_tag.r = limits[2],
-        arrow_tag.l = ifelse(conf.low < .data$arrow_tag.l, TRUE, FALSE),
-        arrow_tag.r = ifelse(conf.high > .data$arrow_tag.r, TRUE, FALSE)
-      ) %>%
-      mutate(
-        plot_range.low = ifelse(.data$arrow_tag.l, limits[1], conf.low),
-        plot_range.high = ifelse(.data$arrow_tag.r, limits[2], conf.high)
-      )
-  }
-  
-  
-  
-  plot_data <- list(
-    forest_data = forest_terms,
-    mapping = mapping,
-    panels = panels, trans = trans,
-    funcs = funcs, format_options = format_options, theme = theme,
-    limits = limits, breaks = breaks, recalculate_width = recalculate_width,
-    recalculate_height = recalculate_height, exclude_infinite_cis = exclude_infinite_cis
-  )
-  main_plot <- do.call("panel_forest_plot", plot_data)
-  if (return_data) {
-    list(plot_data = plot_data, plot = main_plot)
-  } else {
-    main_plot
-  }
-}
+#'
+#'  Creates multivariate forestplot
+#'
+#' @description This is used to make data for plots
+#'
+#' @details changed some things in the broom coef where it won't correctly give values
+#' 
+#' @param data data to use models
+#' 
+#' @return data for plot
+#' 
+#' @examples 
+#' # something
+#' 
+#' 
+#' @export
+#' 
+#' @importFrom stats var runif rexp
+#' @importFrom Rdpack reprompt
+#' @import forestmodel
 
 
 
@@ -211,40 +27,56 @@ forest_model_lars <- function(model,
 
 
 
-
-
-mforestmodel <- function(data, pala="grey75", palb="grey15", lim=c(-2.6,4), dependent="delta") {
+mforestmodel <- function(data, pala="grey25", palb="grey75", lim=c(-2.6,4), dependent="delta", 
+                         legend_position="none", header = NULL, spaces = NULL, est_family="poisson") {
 
   tgt_uni <- paste0(dependent,"~", names(data)[-grep(dependent, names(data))])
   tgt_mul <- paste0(dependent,"~", paste(names(data)[-grep(dependent, names(data))], collapse="+"))
   
-  fit_uni <- Map(function(x) glm(as.formula(x), family = "poisson", data = data), tgt_uni)
-  fit_mul <- glm(tgt_mul, family = "poisson", data = data)
+  fit_uni <- Map(function(x) glm(as.formula(x), family = est_family, data = data), tgt_uni)
+  fit_mul <- glm(tgt_mul, family = est_family, data = data)
   
   
 trans <- exp
   
 
-fd2 <- forest_model_lars(model = fit_mul,      return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
-fd1 <- forest_model_lars(model_list = fit_uni, return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
+fd2 <- forest_model_m(model = fit_mul,      return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
+fd1 <- forest_model_m(model_list = fit_uni, return_data = T, factor_separate_line = T, exponentiate = T)$plot_data
 
 fd1$panels[[11]] <- fd2$panels[[7]]
 fd1$panels[[12]] <- fd2$panels[[8]]
 fd1$panels[[13]] <- fd2$panels[[9]]
 fd1$panels[[14]] <- fd2$panels[[10]]
 
-fd1$panels[[6]]$heading <- "Relative Risk"
-fd1$panels[[8]]$heading <- "Univariate (grey)"
-fd1$panels[[9]]$heading <- "P"
-fd1$panels[[12]]$heading <- "Multivariate (black)"
-fd1$panels[[13]]$heading <- "P"
 
-fd1$panels[[1]]$width <- 0.015
-fd1$panels[[3]]$width <- 0.27
-fd1$panels[[8]]$width <- 0.2
-fd1$panels[[10]]$width <- 0.005
-fd1$panels[[12]]$width <- 0.2
-fd1$panels[[14]]$width <- 0.020
+if (is.null(header)) {
+  head <- c("Variable","N","Relative Risk","Univariate","P","Multivariate","P")
+  if (est_family=="binomial") {head[3]<-"Odds Ratio"}
+} else {head <- header}
+
+if (is.null(spaces)) {
+  space <- c(0.015,0.27,0.2,0.005,0.2,0.02)
+} else {space <- spaces}
+
+
+
+fd1$panels[[2]]$heading <- head[1]
+fd1$panels[[4]]$heading <- head[2]
+fd1$panels[[6]]$heading <- head[3]
+fd1$panels[[8]]$heading <- head[4]
+fd1$panels[[9]]$heading <- head[5]
+fd1$panels[[12]]$heading <-head[6]
+fd1$panels[[13]]$heading <-head[7]
+
+fd1$panels[[1]]$width <- space[1]
+fd1$panels[[3]]$width <- space[2]
+fd1$panels[[8]]$width <- space[3]
+fd1$panels[[10]]$width <-space[4]
+fd1$panels[[12]]$width <-space[5]
+fd1$panels[[14]]$width <-space[6]
+
+#fd1$panels[[13]]$color <- "Multivariate"
+#fd1$panels[[9]]$color <- "Univariate"
 
 fd1$panels[[12]]$display <- new_quosure(
   quote(if_else(reference, "Reference", sprintf("%0.2f (%0.2f, %0.2f)",
@@ -545,7 +377,6 @@ forest_text <- lapply(seq(panels), function(i) {
         hjust = hjust,
         label = mapped_text[[i]],
         fontface = fontface,
-        color = "red",
         parse = parse
       )
     )
@@ -635,6 +466,7 @@ if (format_options$banded) {
               forest_rectangles, na.rm = TRUE,
               color = "grey90", fill="white", size=0.3)
 }
+
 main_plot <- main_plot + 
   geom_line(
   aes(x, y, linetype = linetype, group = group),
@@ -651,17 +483,24 @@ if (any(mapped_data$diamond)) {
 }
 
 main_plot <- main_plot +
-  geom_errorbar(aes(y = y, x = x, xmin = xmin, xmax = xmax, color=rev(type)), position=position_dodge(0.6),
-                width=0.4,size=0.4, na.rm = TRUE,
+  geom_errorbar(aes(y = y, x = x, xmin = xmin, xmax = xmax, color=(type)), position=position_dodge(0.6),
+                width=0.4,size=0.4, na.rm = TRUE, show.legend = F,
                 filter(mapped_data, !diamond & !(is.na(xmin) & is.na(xmax))))
 
 
 main_plot <- main_plot +
-  geom_pointrange(aes(y=y, x=x, xmin = xmin, xmax = xmax, color=rev(type)), position=position_dodge(0.6),
-                  size = 0.5,fatten = 6, filter(mapped_data, !diamond),
+  geom_pointrange(aes(y=y, x=x, xmin = xmin, xmax = xmax, color=(type)), position=position_dodge(0.6),
+                  size = 0.5,fatten = 6, filter(mapped_data, !diamond) %>% mutate(xmin=if_else(is.na(xmin),x,xmin),
+                                                                                  xmax=if_else(is.na(xmax),x,xmax)),
                   shape = format_options$shape, na.rm = TRUE)
 
 
+point_data <- forest_text %>% filter(label %in% c("Univariate","Multivariate")) %>% 
+  mutate(type = label)
+
+forest_text <- forest_text %>% mutate(x = if_else(label %in% c("Univariate","Multivariate"),x+0.2,x))
+
+main_plot <- main_plot + geom_point(size=3.5, data=point_data, aes(x=x+0.05, y=y-0.04, color=type), shape=15)
 
 if (any(mapped_data$whole_row)) {
   main_plot <- main_plot +
@@ -670,6 +509,7 @@ if (any(mapped_data$whole_row)) {
               fill = "#FFFFFF"
     )
 }
+
 for (parse_type in unique(forest_text$parse)) {
   main_plot <- main_plot +
     geom_text(aes(x, y, label = label, hjust = hjust, fontface = fontface),
@@ -688,13 +528,15 @@ main_plot <- main_plot +
   labs(color=NULL) +
   scale_linetype_identity() +
   scale_alpha_identity() +
-  guides(size = "none") +
   scale_x_continuous(breaks = breaks, labels = sprintf("%g", trans(breaks)), expand = c(0,0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  theme + theme(legend.position="none", 
-                panel.border = element_rect(colour = "black", size=0.8),
-                axis.text =element_text(color="black"), 
-                axis.ticks = element_line(color="black"))
+  theme + 
+  theme(legend.position = legend_position, 
+        legend.background = element_rect(fill=NA),
+        panel.border = element_rect(colour = "black", size = 0.8),
+        axis.text =element_text(color="black"), 
+        axis.ticks = element_line(color="black"))
 
-suppressWarnings(print(main_plot))
+main_plot
 }
+
