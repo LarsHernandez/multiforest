@@ -28,7 +28,7 @@
 
 
 mforestmodel <- function(data, pala="grey25", palb="grey75", lim=c(-2.6,4), dependent="delta", 
-                         legend_position="none", header = NULL, spaces = NULL, est_family="poisson") {
+                         legend_position="none", header = NULL, spaces = NULL, est_family="poisson",p_ci = 1, p_eps=0.001) {
 
   tgt_uni <- paste0(dependent,"~", names(data)[-grep(dependent, names(data))])
   tgt_mul <- paste0(dependent,"~", paste(names(data)[-grep(dependent, names(data))], collapse="+"))
@@ -83,7 +83,9 @@ fd1$panels[[12]]$display <- new_quosure(
                                                 trans(estimate_2), trans(conf.low_2), trans(conf.high_2)))))
 
 fd1$panels[[13]]$display<- new_quosure(
-  quote(if_else(reference, "", format.pval(p.value_2, digits = 1,eps = 0.001))))
+  quote(if_else(reference, "", format.pval(p.value_2, digits = p_ci,eps = p_eps))))
+fd1$panels[[9]]$display<- new_quosure(
+  quote(if_else(reference, "", format.pval(p.value, digits = p_ci,eps = p_eps))))
 
 
 # Function ----------------------------------------------------------------

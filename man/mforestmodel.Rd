@@ -13,7 +13,9 @@ mforestmodel(
   legend_position = "none",
   header = NULL,
   spaces = NULL,
-  est_family = "poisson"
+  est_family = "poisson",
+  p_ci = 1,
+  p_eps = 0.001
 )
 }
 \arguments{

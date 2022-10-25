@@ -196,7 +196,7 @@ Female
 60 - 75
 </td>
 <td style="text-align:left;">
-&lt; 55kg
+\< 55kg
 </td>
 <td style="text-align:left;">
 IV
@@ -222,7 +222,7 @@ Female
 60 - 75
 </td>
 <td style="text-align:left;">
-&lt; 55kg
+\< 55kg
 </td>
 <td style="text-align:left;">
 IV
@@ -291,7 +291,8 @@ mforestmodel(pb, dependent="dead5yr", lim=c(-2.4,2.4),
              pala="#2171b5", palb="#9ecae1", 
              #legend_position = c(0.55,0.93), 
              spaces = c(0.015,0.22,0.2,0.005,0.2,0.02),
-             header = c("Group","Patients","RR of death (95% CI)","Univariate","P.val","Multivariate","P.val")) + 
+             header = c("Group","Patients","RR of death (95% CI)","Univariate","P.val","Multivariate","P.val"),
+             p_ci = 1, p_eps=0.01) + 
   labs(title="Relative risk of death within 5 years of diagnosis",
        subtitle="PBC3 - randomized clinical trial between 1 Jan. 1983 and 1 Jan. 1987")
 ```

@@ -38,6 +38,6 @@ changed some things in the broom coef where it won't correctly give values
 \examples{
 # something
 
-forest_model_m(model = fit_mul, return_data = T, factor_separate_line = T, exponentiate = T)
+#forest_model_m(model = fit_mul, return_data = T, factor_separate_line = T, exponentiate = T)
 
 }

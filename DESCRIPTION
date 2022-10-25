@@ -9,7 +9,7 @@ Description: Compressed spatial vector data originally from <https://dawadocs.da
     Features, SF, objects with data on population, age and gender from Statistics Denmark <https://www.dst.dk/da/>.
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Suggests: 
     rmarkdown
 Imports: Rdpack,

@@ -12,7 +12,7 @@
 #' @examples 
 #' # something
 #' 
-#' forest_model_m(model = fit_mul, return_data = T, factor_separate_line = T, exponentiate = T)
+#' #forest_model_m(model = fit_mul, return_data = T, factor_separate_line = T, exponentiate = T)
 #' 
 #' @export
 #' 
@@ -72,7 +72,7 @@ forest_model_m <- function(model,
   }
   
   make_forest_terms <- function(model) {
-    tidy_model <- broom::tidy(model, conf.int = FALSE)
+    tidy_model <- broom::tidy(model, conf.int = FALSE,conf.type="Wald")
     tidy_model <-  tidy_model %>% 
       mutate(conf.low=estimate-(1.96*std.error),
              conf.high=estimate+(1.96*std.error),
